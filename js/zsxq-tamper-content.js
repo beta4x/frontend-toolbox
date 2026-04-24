@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         知识星球复制、剪藏助手（顶呱呱版）
 // @namespace    http://tampermonkey.net/
-// @version      2026-04-20
+// @version      2026-04-24
 // @description  功能：解除复制限制；解决用网页剪藏工具剪藏时，换行符丢失的问题。上述两项功能，列表页、详情页都支持。
 // @author       beta4x
 // @license      AGPL-3.0-only; https://www.gnu.org/licenses/agpl-3.0.en.html
 // @copyright    2026, beta4x (https://github.com/beta4x)
-// @match        https://wx.zsxq.com/group/*
+// @match        https://wx.zsxq.com/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=zsxq.com
 // @grant        none
 // ==/UserScript==
@@ -27,10 +27,10 @@
         disabledCopyClassName: 'disabled-copy',
         enabledCopyClassName: 'enabled-copy',
         // wrap content with pre tag
-        preTargetSelector: 'div.talk-content-container, div.answer-content-container',
+        preTargetSelector: 'div.talk-content-container > div.content, div.answer-content-container > div.question, div.answer-content-container > div.answer',
         preStyleId: 'zsxq-content-pre-style',
         preStyleClass: 'content-pre-wrapper',
-        debounceDelay: 400,
+        debounceDelay: 200,
         debug: false
     };
 
@@ -80,19 +80,24 @@ pre.${CONFIG.preStyleClass} {
 
     function wrapContentWithPre(container) {
         const fnName = wrapContentWithPre.name;
-        const target = container.querySelector(CONFIG.preTargetSelector);
-        if (target) {
-            if (target.childNodes.length === 0 || (target.firstElementChild?.tagName === 'PRE' && target.firstElementChild?.classList.contains(CONFIG.preStyleClass))) return;
+        const targets = container.querySelectorAll(CONFIG.preTargetSelector);
+        targets.forEach(target => {
+            if (target.childNodes.length === 0 || (target.firstElementChild?.tagName === 'PRE' && target.firstElementChild?.dataset.processedBy === CONFIG.preStyleClass)) return;
             try {
                 const pre = document.createElement('pre');
-                pre.classList.add(CONFIG.preStyleClass);
+                pre.style.whiteSpace = 'pre-wrap';
+                pre.style.wordBreak = 'break-word';
+                pre.style.fontFamily = 'inherit';
+                pre.style.margin = 0;
+                // pre.classList.add(CONFIG.preStyleClass);
+                pre.dataset.processedBy = CONFIG.preStyleClass;
                 pre.replaceChildren(...target.childNodes);
                 target.replaceChildren(pre);
                 debugLog('log', fnName, 'success!');
             } catch (e) {
                 debugLog('error', fnName, `failed! ${e.message}`);
             }
-        }
+        });
     }
 
     function tamperContent() {
@@ -131,10 +136,13 @@ pre.${CONFIG.preStyleClass} {
     function startObserver() {
         observer.disconnect();
         const observerContainer = getSelectorContainer(CONFIG.observerContainerSelector);
-        // 没有设置 {attributes: true}，因此 setAttribute() 或 classList.replace() 都不会触发回调。
-        observer.observe(observerContainer, { childList: true, subtree: true });
+        if (observerContainer) {
+            // 知识星球是一个 SPA，元素的 class（如复制限制）可能是异步获取权限后动态添加的，因此必须监听 attributes 变化（特别是 class）。
+            // 脚本自身的 DOM 修改已包裹在 observer.disconnect() 期间，因此不会引发死循环。
+            observer.observe(observerContainer, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
+        }
     }
 
-    injectStyle();
+    // injectStyle();
     safeTamperContent();
 })();
