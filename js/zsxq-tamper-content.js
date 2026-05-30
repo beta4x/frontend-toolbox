@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         知识星球复制、剪藏助手（顶呱呱版）
 // @namespace    http://tampermonkey.net/
-// @version      2026-04-24
+// @version      2026-06-01
 // @description  功能：解除复制限制；解决用网页剪藏工具剪藏时，换行符丢失的问题。上述两项功能，列表页、详情页都支持。
 // @author       beta4x
 // @license      AGPL-3.0-only; https://www.gnu.org/licenses/agpl-3.0.en.html
@@ -27,7 +27,7 @@
         disabledCopyClassName: 'disabled-copy',
         enabledCopyClassName: 'enabled-copy',
         // wrap content with pre tag
-        preTargetSelector: 'div.talk-content-container > div.content, div.answer-content-container > div.question, div.answer-content-container > div.answer',
+        preTargetSelector: 'div.talk-content-container > div.content, div.task-content-container > div.content, div.answer-content-container > div.question, div.answer-content-container > div.answer, div.text > span[parsetype=pure][class=text]',
         preStyleId: 'zsxq-content-pre-style',
         preStyleClass: 'content-pre-wrapper',
         debounceDelay: 200,
